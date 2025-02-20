@@ -1,6 +1,6 @@
 const db = require("../config/db");
 
-// Function to determine shift based on Sri Lanka time
+
 const getShift = () => {
     let hour = new Date().getHours();
     if (hour >= 8 && hour < 22) return "Day"; 
@@ -41,4 +41,18 @@ const insertProductionData = (req, res) => {
     });
 };
 
-module.exports = { insertProductionData };
+// Retrieve production data
+const getProductionData = (req, res) => {
+    // Query the database to get all the production data
+    db.query("SELECT * FROM production_data ORDER BY id DESC", (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: "Database query error" });
+        }
+
+        // Send back the results as a JSON response
+        res.status(200).json(results);
+    });
+};
+
+module.exports = { insertProductionData, getProductionData };
