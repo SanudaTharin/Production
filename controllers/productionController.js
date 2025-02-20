@@ -1,10 +1,9 @@
-const moment = require("moment-timezone");
 const db = require("../config/db");
 
 // Function to determine shift based on Sri Lanka time
 const getShift = () => {
-    let hour = moment().tz("Asia/Colombo").hour();
-    if (hour >= 8 && hour < 22) return "Day";
+    let hour = new Date().getHours();
+    if (hour >= 8 && hour < 22) return "Day"; 
     else return "Night";
 };
 
@@ -16,9 +15,8 @@ const insertProductionData = (req, res) => {
     }
 
     const shift = getShift();
-    const timestamp = moment().tz("Asia/Colombo").format("YYYY-MM-DD HH:mm:ss");
 
-    // Get the latest cumulative production
+    // Get the latest cumulative production from the database
     db.query("SELECT cumulative_production FROM production_data ORDER BY id DESC LIMIT 1", (err, results) => {
         if (err) {
             console.error("Database error:", err);
@@ -27,12 +25,12 @@ const insertProductionData = (req, res) => {
 
         let cumulativeProduction = production; // Default to current production if no previous data exists
         if (results.length > 0) {
-            cumulativeProduction += results[0].cumulative_production;
+            cumulativeProduction = results[0].cumulative_production + production; // Add current production to last cumulative value
         }
 
-        // Insert data into the database with correct timestamp
-        const sql = `INSERT INTO production_data (shift, production, cumulative_production, timestamp) VALUES (?, ?, ?, ?)`;
-        db.query(sql, [shift, production, cumulativeProduction, timestamp], (err) => {
+        // Insert data into database
+        const sql = `INSERT INTO production_data (shift, production, cumulative_production) VALUES (?, ?, ?)`;
+        db.query(sql, [shift, production, cumulativeProduction], (err) => {
             if (err) {
                 console.error("Insert error:", err);
                 return res.status(500).json({ error: "Error inserting data" });
