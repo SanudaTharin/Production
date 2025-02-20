@@ -15,6 +15,7 @@ const insertProductionData = (req, res) => {
     }
 
     const shift = getShift();
+    const productionValue = Number(production); // Ensure it's a number
 
     // Get the latest cumulative production from the database
     db.query("SELECT cumulative_production FROM production_data ORDER BY id DESC LIMIT 1", (err, results) => {
@@ -23,14 +24,14 @@ const insertProductionData = (req, res) => {
             return res.status(500).json({ error: "Database query error" });
         }
 
-        let cumulativeProduction = production; // Default to current production if no previous data exists
+        let cumulativeProduction = productionValue; // Default to current production if no previous data exists
         if (results.length > 0) {
-            cumulativeProduction = results[0].cumulative_production + production; // Add current production to last cumulative value
+            cumulativeProduction = Number(results[0].cumulative_production) + productionValue; // Ensure numerical addition
         }
 
         // Insert data into database
         const sql = `INSERT INTO production_data (shift, production, cumulative_production) VALUES (?, ?, ?)`;
-        db.query(sql, [shift, production, cumulativeProduction], (err) => {
+        db.query(sql, [shift, productionValue, cumulativeProduction], (err) => {
             if (err) {
                 console.error("Insert error:", err);
                 return res.status(500).json({ error: "Error inserting data" });
