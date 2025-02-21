@@ -21,7 +21,7 @@ const insertProductionData = (req, res) => {
 
     
     // Get the latest cumulative production from the database
-    db.query("SELECT cumulative_production FROM production_data ORDER BY id DESC LIMIT 1", (err, results) => {
+    db.query("SELECT cumulative_production FROM punching_machine ORDER BY id DESC LIMIT 1", (err, results) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({ error: "Database query error" });
@@ -33,7 +33,7 @@ const insertProductionData = (req, res) => {
         }
 
         // Insert data into database with server's local date & time
-        const sql = `INSERT INTO production_data (date, time, shift, production, cumulative_production) VALUES (?, ?, ?, ?, ?)`;
+        const sql = `INSERT INTO punching_machine (date, time, shift, production, cumulative_production) VALUES (?, ?, ?, ?, ?)`;
         db.query(sql, [Date, Time, shift, productionValue, cumulativeProduction], (err) => {
             if (err) {
                 console.error("Insert error:", err);
@@ -47,7 +47,7 @@ const insertProductionData = (req, res) => {
 // Retrieve production data
 const getProductionData = (req, res) => {
     // Query the database to get all the production data
-    db.query("SELECT * FROM production_data ORDER BY id DESC", (err, results) => {
+    db.query("SELECT * FROM punching_machine ORDER BY id DESC", (err, results) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({ error: "Database query error" });
