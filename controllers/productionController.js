@@ -19,6 +19,10 @@ const insertProductionData = (req, res) => {
     const Date = moment().tz("Asia/Colombo").format("YYYY-MM-DD"); // Sri Lanka Date
     const Time = moment().tz("Asia/Colombo").format("HH:mm:ss"); // Sri Lanka Time
 
+    // Debugging: Log Date and Time values
+    console.log("Date:", Date);
+    console.log("Time:", Time);
+
     // Get the latest cumulative production from the database
     db.query("SELECT cumulative_production FROM production_data ORDER BY id DESC LIMIT 1", (err, results) => {
         if (err) {
