@@ -19,10 +19,7 @@ const insertProductionData = (req, res) => {
     const Date = moment().format("YYYY-MM-DD"); // Server's local Date
     const Time = moment().format("HH:mm:ss"); // Server's local Time
 
-    // Debugging: Log Date and Time values
-    console.log("Date:", Date);
-    console.log("Time:", Time);
-
+    
     // Get the latest cumulative production from the database
     db.query("SELECT cumulative_production FROM production_data ORDER BY id DESC LIMIT 1", (err, results) => {
         if (err) {
@@ -36,14 +33,13 @@ const insertProductionData = (req, res) => {
         }
 
         // Insert data into database with server's local date & time
-        const sql = `INSERT INTO production_data (date, time, shift, production, cumulative_production) 
-             VALUES ('2025-02-20', '12:00:00', ?, ?, ?)`;
-        db.query(sql, [shift, productionValue, cumulativeProduction], (err) => {
-                if (err) {
-                    console.error("Insert error:", err);
-                    return res.status(500).json({ error: "Error inserting data" });
-                }
-                res.status(200).json({ message: "Data inserted successfully" });
+        const sql = `INSERT INTO production_data (date, time, shift, production, cumulative_production) VALUES (?, ?, ?, ?, ?)`;
+        db.query(sql, [Date, Time, shift, productionValue, cumulativeProduction], (err) => {
+            if (err) {
+                console.error("Insert error:", err);
+                return res.status(500).json({ error: "Error inserting data" });
+            }
+            res.status(200).json({ message: "Data inserted successfully" });
         });
     });
 };
