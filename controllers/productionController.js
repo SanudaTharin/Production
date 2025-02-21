@@ -1,13 +1,13 @@
 const db = require("../config/db");
 const moment = require("moment-timezone"); // Import moment-timezone
 
-// Function to determine shift based on Sri Lanka time
+// Function to determine shift based on server's local time
 const getShift = () => {
-    let hour = moment().tz("Asia/Colombo").hour(); // Get hour in Sri Lanka time
+    let hour = moment().hour(); // Get hour in server's local time
     return (hour >= 8 && hour < 22) ? "Day" : "Night";
 };
 
-// Insert production data with Sri Lanka date & time
+// Insert production data with server's local date & time
 const insertProductionData = (req, res) => {
     const { production } = req.body;
     if (production === undefined || production === null) {
@@ -16,8 +16,8 @@ const insertProductionData = (req, res) => {
 
     const shift = getShift();
     const productionValue = Number(production); // Ensure it's a number
-    const Date = moment().tz("Asia/Colombo").format("YYYY-MM-DD"); // Sri Lanka Date
-    const Time = moment().tz("Asia/Colombo").format("HH:mm:ss"); // Sri Lanka Time
+    const Date = moment().format("YYYY-MM-DD"); // Server's local Date
+    const Time = moment().format("HH:mm:ss"); // Server's local Time
 
     // Debugging: Log Date and Time values
     console.log("Date:", Date);
@@ -35,7 +35,7 @@ const insertProductionData = (req, res) => {
             cumulativeProduction = Number(results[0].cumulative_production) + productionValue; // Ensure numerical addition
         }
 
-        // Insert data into database with Sri Lanka date & time
+        // Insert data into database with server's local date & time
         const sql = `INSERT INTO production_data (date, time, shift, production, cumulative_production) VALUES (?, ?, ?, ?, ?)`;
         db.query(sql, [Date, Time, shift, productionValue, cumulativeProduction], (err) => {
             if (err) {
