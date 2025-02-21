@@ -36,13 +36,14 @@ const insertProductionData = (req, res) => {
         }
 
         // Insert data into database with server's local date & time
-        const sql = `INSERT INTO production_data (date, time, shift, production, cumulative_production) VALUES (?, ?, ?, ?, ?)`;
-        db.query(sql, [Date, Time, shift, productionValue, cumulativeProduction], (err) => {
-            if (err) {
-                console.error("Insert error:", err);
-                return res.status(500).json({ error: "Error inserting data" });
-            }
-            res.status(200).json({ message: "Data inserted successfully" });
+        const sql = `INSERT INTO production_data (date, time, shift, production, cumulative_production) 
+             VALUES ('2025-02-20', '12:00:00', ?, ?, ?)`;
+        db.query(sql, [shift, productionValue, cumulativeProduction], (err) => {
+                if (err) {
+                    console.error("Insert error:", err);
+                    return res.status(500).json({ error: "Error inserting data" });
+                }
+                res.status(200).json({ message: "Data inserted successfully" });
         });
     });
 };
