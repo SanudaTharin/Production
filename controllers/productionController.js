@@ -1,13 +1,13 @@
 const db = require("../config/db");
+const moment = require("moment-timezone"); // Import moment-timezone
 
-
+// Function to determine shift based on Sri Lanka time
 const getShift = () => {
-    let hour = new Date().getHours();
-    if (hour >= 8 && hour < 22) return "Day"; 
-    else return "Night";
+    let hour = moment().tz("Asia/Colombo").hour(); // Get hour in Sri Lanka time
+    return (hour >= 8 && hour < 22) ? "Day" : "Night";
 };
 
-// Insert production data
+// Insert production data with Sri Lanka date & time
 const insertProductionData = (req, res) => {
     const { production } = req.body;
     if (production === undefined || production === null) {
@@ -16,6 +16,8 @@ const insertProductionData = (req, res) => {
 
     const shift = getShift();
     const productionValue = Number(production); // Ensure it's a number
+    const Date = moment().tz("Asia/Colombo").format("YYYY-MM-DD"); // Sri Lanka Date
+    const Time = moment().tz("Asia/Colombo").format("HH:mm:ss"); // Sri Lanka Time
 
     // Get the latest cumulative production from the database
     db.query("SELECT cumulative_production FROM production_data ORDER BY id DESC LIMIT 1", (err, results) => {
@@ -29,9 +31,9 @@ const insertProductionData = (req, res) => {
             cumulativeProduction = Number(results[0].cumulative_production) + productionValue; // Ensure numerical addition
         }
 
-        // Insert data into database
-        const sql = `INSERT INTO production_data (shift, production, cumulative_production) VALUES (?, ?, ?)`;
-        db.query(sql, [shift, productionValue, cumulativeProduction], (err) => {
+        // Insert data into database with Sri Lanka date & time
+        const sql = `INSERT INTO production_data (date, time, shift, production, cumulative_production) VALUES (?, ?, ?, ?, ?)`;
+        db.query(sql, [Date, Time, shift, productionValue, cumulativeProduction], (err) => {
             if (err) {
                 console.error("Insert error:", err);
                 return res.status(500).json({ error: "Error inserting data" });
