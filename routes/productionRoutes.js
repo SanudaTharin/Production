@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { insertPunchingData, getPunchingData } = require("../controllers/PunchingController");
-
+const { insertCnDData, getCnDData } = require("../controllers/CnDController");
 
 
 // GET and POST route to insert Punching data
