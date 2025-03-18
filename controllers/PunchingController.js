@@ -59,25 +59,30 @@ const getPunchingData = (req, res) => {
 };
 
 const getpunchingShift = (req, res) => {
-    // Query the database to get the total production for each shift (Day and Night)
+    // Query the database to get the production difference and shift data
     db.query(`
-        SELECT shift, SUM(production) AS total_production 
-        FROM (
-            SELECT 
-                CASE 
-                    WHEN TIME(time) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
-                    ELSE 'Night' 
-                END AS shift, 
-                production 
-            FROM punching_machine 
-            WHERE 
-                (date = CURDATE() AND TIME(time) BETWEEN '08:00:00' AND '23:59:59') 
-                OR 
-                (date = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND TIME(time) BETWEEN '20:00:00' AND '23:59:59') 
-                OR 
-                (date = CURDATE() AND TIME(time) BETWEEN '00:00:00' AND '07:59:59')
-        ) AS shifts 
-        GROUP BY shift;
+        SELECT 
+            CASE 
+                WHEN CURTIME() BETWEEN '20:00:00' AND '23:59:59' THEN 
+                    (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND CURTIME() AND date = CURDATE()) 
+                    - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = '20:00:00' AND date = CURDATE())
+                WHEN CURTIME() BETWEEN '00:00:00' AND '07:59:59' THEN 
+                    (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND '23:59:59' AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
+                    - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = CURTIME() AND date = CURDATE())
+                ELSE 
+                    (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' AND date = CURDATE()) 
+                    - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
+            END AS Shift_Production,
+            CASE 
+                WHEN TIME(time) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
+                ELSE 'Night' 
+            END AS shift 
+        FROM punching_machine 
+        WHERE date = CURDATE() 
+        AND (TIME(time) BETWEEN '08:00:00' AND '19:59:59' 
+            OR CURTIME() BETWEEN '20:00:00' AND '23:59:59' 
+            OR CURTIME() BETWEEN '00:00:00' AND '07:59:59') 
+        LIMIT 1;
     `, (err, results) => {
         if (err) {
             console.error("Database error:", err);
@@ -88,6 +93,7 @@ const getpunchingShift = (req, res) => {
         res.status(200).json(results);
     });
 };
+
 
 
 module.exports = { insertPunchingData, getPunchingData, getpunchingShift };
