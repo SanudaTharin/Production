@@ -58,4 +58,36 @@ const getPunchingData = (req, res) => {
     });
 };
 
-module.exports = { insertPunchingData, getPunchingData };
+const getpunchingShift = (req, res) => {
+    // Query the database to get the total production for each shift (Day and Night)
+    db.query(`
+        SELECT shift, SUM(production) AS total_production 
+        FROM (
+            SELECT 
+                CASE 
+                    WHEN TIME(time) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
+                    ELSE 'Night' 
+                END AS shift, 
+                production 
+            FROM punching_machine 
+            WHERE 
+                (date = CURDATE() AND TIME(time) BETWEEN '08:00:00' AND '23:59:59') 
+                OR 
+                (date = DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND TIME(time) BETWEEN '20:00:00' AND '23:59:59') 
+                OR 
+                (date = CURDATE() AND TIME(time) BETWEEN '00:00:00' AND '07:59:59')
+        ) AS shifts 
+        GROUP BY shift;
+    `, (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: "Database query error" });
+        }
+
+        // Send back the results as a JSON response
+        res.status(200).json(results);
+    });
+};
+
+
+module.exports = { insertPunchingData, getPunchingData, getpunchingShift };

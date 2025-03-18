@@ -8,11 +8,6 @@ const app = express();
 app.use(bodyParser.json());
 app.use(cors());
 
-// Middleware to set Content-Security-Policy header
-app.use((req, res, next) => {
-  res.setHeader("Content-Security-Policy", "upgrade-insecure-requests;");
-  next();
-});
 
 // Use routes
 app.use("/production", productionRoutes);
