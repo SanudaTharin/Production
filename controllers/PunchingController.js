@@ -62,27 +62,32 @@ const getpunchingShift = (req, res) => {
     // Query the database to get the production difference and shift data
     db.query(`
         SELECT 
+    CASE 
+        WHEN CURTIME() BETWEEN '20:00:00' AND '23:59:59' THEN 
+            (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND CURTIME() AND date = CURDATE()) 
+            - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = '20:00:00' AND date = CURDATE())
+        WHEN CURTIME() BETWEEN '00:00:00' AND '07:59:59' THEN 
+            (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND '23:59:59' AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
+            - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = CURTIME() AND date = CURDATE())
+        ELSE 
+            (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' AND date = CURDATE()) 
+            - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
+    END AS Shift_Production,
+    CASE 
+        WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
+        ELSE 'Night' 
+    END AS shift,
+    ABS(
+        TIME_TO_SEC(MAX(time)) - TIME_TO_SEC(
             CASE 
-                WHEN CURTIME() BETWEEN '20:00:00' AND '23:59:59' THEN 
-                    (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND CURTIME() AND date = CURDATE()) 
-                    - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = '20:00:00' AND date = CURDATE())
-                WHEN CURTIME() BETWEEN '00:00:00' AND '07:59:59' THEN 
-                    (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND '23:59:59' AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
-                    - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = CURTIME() AND date = CURDATE())
-                ELSE 
-                    (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' AND date = CURDATE()) 
-                    - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
-            END AS Shift_Production,
-            CASE 
-                WHEN TIME(time) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
-                ELSE 'Night' 
-            END AS shift 
-        FROM punching_machine 
-        WHERE date = CURDATE() 
-        AND (TIME(time) BETWEEN '08:00:00' AND '19:59:59' 
-            OR CURTIME() BETWEEN '20:00:00' AND '23:59:59' 
-            OR CURTIME() BETWEEN '00:00:00' AND '07:59:59') 
-        LIMIT 1;
+                WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN '08:00:00' 
+                ELSE '23:00:00' 
+            END
+        )
+    ) / (10.5 * 3600) AS time_division 
+FROM punching_machine 
+WHERE date = CURDATE();
+
     `, (err, results) => {
         if (err) {
             console.error("Database error:", err);
