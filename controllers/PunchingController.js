@@ -66,7 +66,7 @@ const getpunchingShift = (req, res) => {
     CASE
         WHEN entry_rate != 0 THEN (Shift_Production*1.25) / (entry_rate*60) 
         ELSE 0
-    END AS OEE, 
+    END AS Performance, 
     CASE 
         WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
         ELSE 'Night' 
@@ -78,7 +78,7 @@ const getpunchingShift = (req, res) => {
                 ELSE '23:00:00' 
             END
         )
-    ) / (10.5 * 3600) AS time_division
+    ) / (10.5 * 3600) AS Availability
 FROM (
     SELECT 
         CASE 
