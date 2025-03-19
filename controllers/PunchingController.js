@@ -4,7 +4,7 @@ const moment = require("moment-timezone"); // Import moment-timezone
 // Function to determine shift based on server's local time
 const getShift = () => {
     let hour = moment().hour(); // Get hour in server's local time
-    return (hour >= 8 && hour < 22) ? "Day" : "Night";
+    return (hour >= 8 && hour < 20) ? "Day" : "Night";
 };
 
 // Insert production data with server's local date & time
@@ -63,20 +63,33 @@ const getpunchingShift = (req, res) => {
     db.query(`
         SELECT 
     CASE 
-        WHEN CURTIME() BETWEEN '20:00:00' AND '23:59:59' THEN 
-            (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND CURTIME() AND date = CURDATE()) 
-            - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = '20:00:00' AND date = CURDATE())
-        WHEN CURTIME() BETWEEN '00:00:00' AND '07:59:59' THEN 
-            (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND '23:59:59' AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
-            - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = CURTIME() AND date = CURDATE())
+        -- Night Shift (20:00:00 - 23:59:59)
+        WHEN CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') BETWEEN '20:00:00' AND '23:59:59' THEN 
+            (SELECT IFNULL(SUM(production), 0) 
+             FROM punching_machine 
+             WHERE time BETWEEN '20:00:00' AND CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') 
+             AND date = CURDATE()) 
+        -- Midnight to Morning Shift (00:00:00 - 07:59:59)
+        WHEN CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') BETWEEN '00:00:00' AND '07:59:59' THEN 
+            (SELECT IFNULL(SUM(production), 0) 
+             FROM punching_machine 
+             WHERE time BETWEEN '20:00:00' AND '23:59:59' 
+             AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
+        -- Day Shift (08:00:00 - 19:59:59)
         ELSE 
-            (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' AND date = CURDATE()) 
-            - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
+            (SELECT IFNULL(SUM(production), 0) 
+             FROM punching_machine 
+             WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' 
+             AND date = CURDATE())
     END AS Shift_Production,
+    
+    -- Determine Shift (Day or Night) based on the latest record's time
     CASE 
         WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
         ELSE 'Night' 
     END AS shift,
+
+    -- Time division based on the difference from the shift start time
     ABS(
         TIME_TO_SEC(MAX(time)) - TIME_TO_SEC(
             CASE 
@@ -85,8 +98,10 @@ const getpunchingShift = (req, res) => {
             END
         )
     ) / (10.5 * 3600) AS time_division 
-     FROM punching_machine 
-     WHERE date = CURDATE();
+
+  FROM punching_machine 
+  WHERE date = CURDATE();
+
 
 
     `, (err, results) => {
