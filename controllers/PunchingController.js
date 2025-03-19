@@ -72,23 +72,22 @@ const getpunchingShift = (req, res) => {
         ELSE 
             (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' AND date = CURDATE()) 
             - (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time = (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
-    END AS production_difference,
+    END AS Shift_Production,
     CASE 
-        WHEN TIME(time) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
+        WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
         ELSE 'Night' 
     END AS shift,
-    CASE 
-        WHEN TIME(time) BETWEEN '08:00:00' AND '19:59:59' THEN 
-            TIMESTAMPDIFF(SECOND, CONCAT(CURDATE(), ' 08:00:00'), MAX(time)) / (10.5 * 3600)
-        ELSE 
-            TIMESTAMPDIFF(SECOND, CONCAT(CURDATE(), ' 23:00:00'), MAX(time)) / (10.5 * 3600)
-    END AS time_division
-    FROM punching_machine 
-       WHERE date = CURDATE() 
-       AND (TIME(time) BETWEEN '08:00:00' AND '19:59:59' 
-       OR CURTIME() BETWEEN '20:00:00' AND '23:59:59' 
-       OR CURTIME() BETWEEN '00:00:00' AND '07:59:59') 
-       LIMIT 1;
+    ABS(
+        TIME_TO_SEC(MAX(time)) - TIME_TO_SEC(
+            CASE 
+                WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN '08:00:00' 
+                ELSE '23:00:00' 
+            END
+        )
+    ) / (10.5 * 3600) AS time_division 
+     FROM punching_machine 
+     WHERE date = CURDATE();
+
 
     `, (err, results) => {
         if (err) {
