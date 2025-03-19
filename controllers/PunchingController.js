@@ -62,34 +62,15 @@ const getpunchingShift = (req, res) => {
     // Query the database to get the production difference and shift data
     db.query(`
         SELECT 
-    CASE 
-        -- Night Shift (20:00:00 - 23:59:59)
-        WHEN CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') BETWEEN '20:00:00' AND '23:59:59' THEN 
-            (SELECT IFNULL(SUM(production), 0) 
-             FROM punching_machine 
-             WHERE time BETWEEN '20:00:00' AND CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') 
-             AND date = CURDATE()) 
-        -- Midnight to Morning Shift (00:00:00 - 07:59:59)
-        WHEN CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') BETWEEN '00:00:00' AND '07:59:59' THEN 
-            (SELECT IFNULL(SUM(production), 0) 
-             FROM punching_machine 
-             WHERE time BETWEEN '20:00:00' AND '23:59:59' 
-             AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
-        -- Day Shift (08:00:00 - 19:59:59)
-        ELSE 
-            (SELECT IFNULL(SUM(production), 0) 
-             FROM punching_machine 
-             WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' 
-             AND date = CURDATE())
-    END AS Shift_Production,
-    
-    -- Determine Shift (Day or Night) based on the latest record's time
+    Shift_Production,
+    CASE
+        WHEN entry_rate != 0 THEN (Shift_Production*1.25) / (entry_rate*60) 
+        ELSE 0
+    END AS OEE, 
     CASE 
         WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
         ELSE 'Night' 
     END AS shift,
-
-    -- Time division based on the difference from the shift start time
     ABS(
         TIME_TO_SEC(MAX(time)) - TIME_TO_SEC(
             CASE 
@@ -97,10 +78,61 @@ const getpunchingShift = (req, res) => {
                 ELSE '23:00:00' 
             END
         )
-    ) / (10.5 * 3600) AS time_division 
+    ) / (10.5 * 3600) AS time_division
+FROM (
+    SELECT 
+        CASE 
+            WHEN CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') BETWEEN '20:00:00' AND '23:59:59' THEN 
+                (SELECT IFNULL(SUM(production), 0) 
+                 FROM punching_machine 
+                 WHERE time BETWEEN '20:00:00' AND CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') 
+                 AND date = CURDATE()) 
+            WHEN CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') BETWEEN '00:00:00' AND '07:59:59' THEN 
+                (SELECT IFNULL(SUM(production), 0) 
+                 FROM punching_machine 
+                 WHERE time BETWEEN '20:00:00' AND '23:59:59' 
+                 AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
+            ELSE 
+                (SELECT IFNULL(SUM(production), 0) 
+                 FROM punching_machine 
+                 WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' 
+                 AND date = CURDATE())
+        END AS Shift_Production,
+        
+        (SELECT COUNT(*)  AS entry_rate 
+         FROM punching_machine
+         WHERE 
+            (
+                (CURTIME() BETWEEN '08:00:00' AND '19:59:59' 
+                AND TIME(time) BETWEEN '08:00:00' 
+                AND (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
+                
+                OR 
+                
+                (CURTIME() BETWEEN '20:00:00' AND '23:59:59' 
+                AND TIME(time) BETWEEN '20:00:00' 
+                AND (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
 
-  FROM punching_machine 
-  WHERE date = CURDATE();
+                OR
+
+                (CURTIME() BETWEEN '00:00:00' AND '07:59:59' 
+                AND TIME(time) BETWEEN '20:00:00' 
+                AND (SELECT MAX(time) FROM punching_machine WHERE date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)))
+            )
+        AND 
+            (
+                (CURTIME() BETWEEN '08:00:00' AND '19:59:59' AND date = CURDATE()) 
+                OR
+                (CURTIME() BETWEEN '20:00:00' AND '23:59:59' AND date = CURDATE()) 
+                OR
+                (CURTIME() BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY))
+            )
+        ) AS entry_rate,
+        
+        MAX(time) AS time
+    FROM punching_machine 
+    WHERE date = CURDATE()
+) AS subquery;
 
 
 
