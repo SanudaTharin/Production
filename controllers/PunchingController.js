@@ -62,77 +62,95 @@ const getpunchingShift = (req, res) => {
     // Query the database to get the production difference and shift data
     db.query(`
         SELECT 
-    Shift_Production,
-    CASE
-        WHEN entry_rate != 0 THEN (Shift_Production*1.25) / (entry_rate*60) 
-        ELSE 0
-    END AS Performance, 
-    CASE 
-        WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
-        ELSE 'Night' 
-    END AS shift,
-    ABS(
-        TIME_TO_SEC(MAX(time)) - TIME_TO_SEC(
-            CASE 
-                WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN '08:00:00' 
-                ELSE '23:00:00' 
-            END
-        )
-    ) / (10.5 * 3600) AS Availability
+    main_query.Shift_Production,
+    main_query.Performance,
+    main_query.shift,
+    main_query.Availability,
+    latest_entry.time AS Last_Entry_Time,
+    latest_entry.production AS Last_Production,
+    latest_entry.cumulative_production AS Last_Cumulative_Production
 FROM (
     SELECT 
+        Shift_Production,
+        CASE
+            WHEN entry_rate != 0 THEN (Shift_Production * 1.25) / (entry_rate * 60) 
+            ELSE 0
+        END AS Performance, 
         CASE 
-            WHEN CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') BETWEEN '20:00:00' AND '23:59:59' THEN 
-                (SELECT IFNULL(SUM(production), 0) 
-                 FROM punching_machine 
-                 WHERE time BETWEEN '20:00:00' AND CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') 
-                 AND date = CURDATE()) 
-            WHEN CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') BETWEEN '00:00:00' AND '07:59:59' THEN 
-                (SELECT IFNULL(SUM(production), 0) 
-                 FROM punching_machine 
-                 WHERE time BETWEEN '20:00:00' AND '23:59:59' 
-                 AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
-            ELSE 
-                (SELECT IFNULL(SUM(production), 0) 
-                 FROM punching_machine 
-                 WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' 
-                 AND date = CURDATE())
-        END AS Shift_Production,
-        
-        (SELECT COUNT(*)  AS entry_rate 
-         FROM punching_machine
-         WHERE 
-            (
-                (CURTIME() BETWEEN '08:00:00' AND '19:59:59' 
-                AND TIME(time) BETWEEN '08:00:00' 
-                AND (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
-                
-                OR 
-                
-                (CURTIME() BETWEEN '20:00:00' AND '23:59:59' 
-                AND TIME(time) BETWEEN '20:00:00' 
-                AND (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
-
-                OR
-
-                (CURTIME() BETWEEN '00:00:00' AND '07:59:59' 
-                AND TIME(time) BETWEEN '20:00:00' 
-                AND (SELECT MAX(time) FROM punching_machine WHERE date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)))
+            WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day' 
+            ELSE 'Night' 
+        END AS shift,
+        ABS(
+            TIME_TO_SEC(MAX(time)) - TIME_TO_SEC(
+                CASE 
+                    WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN '08:00:00' 
+                    ELSE '23:00:00' 
+                END
             )
-        AND 
-            (
-                (CURTIME() BETWEEN '08:00:00' AND '19:59:59' AND date = CURDATE()) 
-                OR
-                (CURTIME() BETWEEN '20:00:00' AND '23:59:59' AND date = CURDATE()) 
-                OR
-                (CURTIME() BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY))
-            )
-        ) AS entry_rate,
-        
-        MAX(time) AS time
+        ) / (10.5 * 3600) AS Availability
+    FROM (
+        SELECT 
+            CASE 
+                WHEN CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') BETWEEN '20:00:00' AND '23:59:59' THEN 
+                    (SELECT IFNULL(SUM(production), 0) 
+                     FROM punching_machine 
+                     WHERE time BETWEEN '20:00:00' AND CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') 
+                     AND date = CURDATE()) 
+                WHEN CONVERT_TZ(CURTIME(), 'UTC', 'Asia/Colombo') BETWEEN '00:00:00' AND '07:59:59' THEN 
+                    (SELECT IFNULL(SUM(production), 0) 
+                     FROM punching_machine 
+                     WHERE time BETWEEN '20:00:00' AND '23:59:59' 
+                     AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
+                ELSE 
+                    (SELECT IFNULL(SUM(production), 0) 
+                     FROM punching_machine 
+                     WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' 
+                     AND date = CURDATE())
+            END AS Shift_Production,
+            
+            (SELECT COUNT(*)  
+             FROM punching_machine
+             WHERE 
+                (
+                    (CURTIME() BETWEEN '08:00:00' AND '19:59:59' 
+                    AND TIME(time) BETWEEN '08:00:00' 
+                    AND (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
+                    
+                    OR 
+                    
+                    (CURTIME() BETWEEN '20:00:00' AND '23:59:59' 
+                    AND TIME(time) BETWEEN '20:00:00' 
+                    AND (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
+
+                    OR
+
+                    (CURTIME() BETWEEN '00:00:00' AND '07:59:59' 
+                    AND TIME(time) BETWEEN '20:00:00' 
+                    AND (SELECT MAX(time) FROM punching_machine WHERE date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)))
+                )
+            AND 
+                (
+                    (CURTIME() BETWEEN '08:00:00' AND '19:59:59' AND date = CURDATE()) 
+                    OR
+                    (CURTIME() BETWEEN '20:00:00' AND '23:59:59' AND date = CURDATE()) 
+                    OR
+                    (CURTIME() BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY))
+                )
+            ) AS entry_rate,
+            
+            MAX(time) AS time
+        FROM punching_machine 
+        WHERE date = CURDATE()
+    ) AS subquery
+) AS main_query
+
+CROSS JOIN (
+    SELECT time, production, cumulative_production 
     FROM punching_machine 
-    WHERE date = CURDATE()
-) AS subquery;
+    ORDER BY id DESC 
+    LIMIT 1
+) AS latest_entry;
+
 
 
 
