@@ -33,7 +33,7 @@ const insertPunchingData = (req, res) => {
         }
 
         // Insert data into database with server's local date & time
-        const sql = `INSERT INTO punching_machine (date, time, shift, production, cumulative_production) VALUES (?, ?, ?, ?, ?)`;
+        const sql = `INSERT INTO punching_machine (date, time, shift, production) VALUES (?, ?, ?, ?, ?)`;
         db.query(sql, [Date, Time, shift, productionValue, cumulativeProduction], (err) => {
             if (err) {
                 console.error("Insert error:", err);
@@ -81,7 +81,7 @@ FROM (
             WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day'
             ELSE 'Night'
         END AS shift,
-        entry_rate / (10.5 * 3600) AS Availability
+        (entry_rate / (10.5 * 3600)) AS Availability
     FROM (
         SELECT
             CASE
@@ -89,7 +89,7 @@ FROM (
                 THEN (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo') AND date = CURDATE())
                 WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
                 THEN (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND '23:59:59' AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY))
-                ELSE (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' AND date = CURDATE())
+                ELSE (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
             END AS Shift_Production,
             (SELECT COUNT(*)
              FROM punching_machine
