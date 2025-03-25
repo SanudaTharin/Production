@@ -148,9 +148,11 @@ const punchpermonth = (req, res) => {
     }
   
     const query = `
-      SELECT SUM(production) AS total_cumulative_production
+      SELECT date, SUM(production) AS daily_production
       FROM punching_machine
-      WHERE YEAR(date) = ? AND MONTH(date) = ?;
+      WHERE YEAR(date) = ? AND MONTH(date) = ?
+      GROUP BY date
+      ORDER BY date;
     `;
 
     db.query(query, [year, month], (err, results) => {
