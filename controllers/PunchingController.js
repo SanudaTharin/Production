@@ -144,23 +144,23 @@ const punchpermonth = (req, res) => {
     const { year, month } = req.query;
   
     if (!year || !month) {
-      return res.status(400).json({ error: "Year and month are required" });
+        return res.status(400).json({ error: "Year and month are required" });
     }
   
     const query = `
-      SELECT date, SUM(production) AS production
-      FROM punching_machine
-      WHERE YEAR(date) = ? AND MONTH(date) = ?
-      GROUP BY date
-      ORDER BY date;
+        SELECT date, SUM(production) AS production
+        FROM punching_machine
+        WHERE YEAR(date) = ? AND MONTH(date) = ?
+        GROUP BY date
+        ORDER BY date;
     `;
 
-    db.query(query, [year, month], (err, results) => {
-      if (err) {
-        console.error("Query error:", err);
-        return res.status(500).json({ error: "Internal Server Error" });
-      }
-      
+    db.query(query, [parseInt(year), parseInt(month)], (err, results) => {
+        if (err) {
+            console.error("Query error:", err);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+        res.json(results);  
     });
 };
 
