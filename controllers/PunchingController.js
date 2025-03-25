@@ -47,7 +47,7 @@ const insertPunchingData = (req, res) => {
 // Retrieve production data
 const getPunchingData = (req, res) => {
     // Query the database to get all the production data
-    db.query("SELECT * FROM punching_machine ORDER BY id DESC", (err, results) => {
+    db.query("SELECT date, time, shift, production FROM punching_machine ORDER BY id DESC", (err, results) => {
         if (err) {
             console.error("Database error:", err);
             return res.status(500).json({ error: "Database query error" });
