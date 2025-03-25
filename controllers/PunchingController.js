@@ -148,7 +148,7 @@ FROM (
             
             MAX(time) AS time
         FROM punching_machine 
-        WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+        WHERE date = CURDATE()
     ) AS subquery
 ) AS main_query
 
