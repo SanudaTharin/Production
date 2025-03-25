@@ -160,7 +160,7 @@ const punchpermonth = (req, res) => {
         console.error("Query error:", err);
         return res.status(500).json({ error: "Internal Server Error" });
       }
-      res.json({ total_cumulative_production: results[0].total_cumulative_production || 0 });
+      
     });
 };
 
