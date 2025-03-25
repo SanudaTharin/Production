@@ -33,7 +33,7 @@ const insertPunchingData = (req, res) => {
         }
 
         // Insert data into database with server's local date & time
-        const sql = `INSERT INTO punching_machine (date, time, shift, production) VALUES (?, ?, ?, ?, ?)`;
+        const sql = `INSERT INTO punching_machine (date, time, shift, production, cumulative_production) VALUES (?, ?, ?, ?, ?)`;
         db.query(sql, [Date, Time, shift, productionValue, cumulativeProduction], (err) => {
             if (err) {
                 console.error("Insert error:", err);
