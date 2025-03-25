@@ -81,14 +81,7 @@ FROM (
             WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day'
             ELSE 'Night'
         END AS shift,
-        ABS(
-            TIME_TO_SEC(MAX(time)) - TIME_TO_SEC(
-                CASE
-                    WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN '08:00:00'
-                    ELSE '23:00:00'
-                END
-            )
-        ) / (10.5 * 3600) AS Availability
+        entry_rate / (10.5 * 3600) AS Availability
     FROM (
         SELECT
             CASE
