@@ -81,7 +81,7 @@ FROM (
             WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day'
             ELSE 'Night'
         END AS shift,
-        (entry_rate / (10.5 * 3600)) AS Availability
+        (entry_rate / (10.5 * 60)) AS Availability
     FROM (
         SELECT
             CASE
