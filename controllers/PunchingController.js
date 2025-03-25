@@ -108,39 +108,47 @@ FROM (
                      AND date = CURDATE())
             END AS Shift_Production,
             
-            (SELECT COUNT(*)  
-             FROM punching_machine
-             WHERE 
-                (
-                    (CURTIME() BETWEEN '08:00:00' AND '19:59:59' 
-                    AND TIME(time) BETWEEN '08:00:00' 
-                    AND (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
-                    
-                    OR 
-                    
-                    (CURTIME() BETWEEN '20:00:00' AND '23:59:59' 
-                    AND TIME(time) BETWEEN '20:00:00' 
-                    AND (SELECT MAX(time) FROM punching_machine WHERE date = CURDATE()))
+            SELECT 
+    (SELECT COUNT(*)  
+     FROM punching_machine
+     WHERE production = 0
+     AND (
+         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59' 
+          AND TIME(time) BETWEEN '08:00:00' 
+          AND (SELECT MAX(time) FROM punching_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
+         
+         OR 
+         
+         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' 
+          AND TIME(time) BETWEEN '20:00:00' 
+          AND (SELECT MAX(time) FROM punching_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
+         
+         OR
+         
+         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' 
+          AND TIME(time) BETWEEN '20:00:00' 
+          AND (SELECT MAX(time) FROM punching_machine WHERE date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY)))
+     )
+     AND (
+         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59' 
+          AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))) 
+         
+         OR
+         
+         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' 
+          AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))) 
+         
+         OR
+         
+         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' 
+          AND date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY))
+     )
+    ) AS entry_rate;
 
-                    OR
-
-                    (CURTIME() BETWEEN '00:00:00' AND '07:59:59' 
-                    AND TIME(time) BETWEEN '20:00:00' 
-                    AND (SELECT MAX(time) FROM punching_machine WHERE date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)))
-                )
-            AND 
-                (
-                    (CURTIME() BETWEEN '08:00:00' AND '19:59:59' AND date = CURDATE()) 
-                    OR
-                    (CURTIME() BETWEEN '20:00:00' AND '23:59:59' AND date = CURDATE()) 
-                    OR
-                    (CURTIME() BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY))
-                )
-            ) AS entry_rate,
             
             MAX(time) AS time
         FROM punching_machine 
-        WHERE date = CURDATE()
+        WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
     ) AS subquery
 ) AS main_query
 
