@@ -140,7 +140,7 @@ CROSS JOIN (
 };
 
 // API Route to Get Cumulative Production
-app.get("/cumulative-month", (req, res) => { 
+const punchpermonth = (req, res) => { 
     const { year, month } = req.query;
   
     if (!year || !month) {
@@ -152,7 +152,7 @@ app.get("/cumulative-month", (req, res) => {
       FROM punching_machine
       WHERE YEAR(date) = ? AND MONTH(date) = ?;
     `;
-  
+
     db.query(query, [year, month], (err, results) => {
       if (err) {
         console.error("Query error:", err);
@@ -160,8 +160,6 @@ app.get("/cumulative-month", (req, res) => {
       }
       res.json({ total_cumulative_production: results[0].total_cumulative_production || 0 });
     });
-  });
+};
 
-
-
-module.exports = { insertPunchingData, getPunchingData, getpunchingShift };
+module.exports = { insertPunchingData, getPunchingData, getpunchingShift, punchpermonth };
