@@ -148,7 +148,7 @@ const punchpermonth = (req, res) => {
     }
   
     const query = `
-      SELECT date, SUM(production) AS daily_production
+      SELECT date, SUM(production) AS production
       FROM punching_machine
       WHERE YEAR(date) = ? AND MONTH(date) = ?
       GROUP BY date
