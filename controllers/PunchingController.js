@@ -113,8 +113,8 @@ FROM (
         )
 
         ELSE 0
-    END AS Shift_Production;
-,
+    END AS Shift_Production,
+    
             (SELECT COUNT(*)
              FROM punching_machine
              WHERE production = 0
