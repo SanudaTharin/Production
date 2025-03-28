@@ -85,7 +85,7 @@ FROM (
     FROM (
         SELECT 
     CASE 
-        --  12:00 AM - 7:59 AM (Sum of Yesterday 8:00 PM - 11:59 PM + Today 12:00 AM - 7:59 AM)
+        
         WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
         THEN (
             (SELECT IFNULL(SUM(production), 0) FROM punching_machine 
@@ -97,7 +97,7 @@ FROM (
              AND date = CURDATE())
         )
         
-        --  8:00 AM - 7:59 PM (Sum of Today 8:00 AM - 7:59 PM)
+        
         WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
         THEN (
             SELECT IFNULL(SUM(production), 0) FROM punching_machine 
@@ -105,7 +105,6 @@ FROM (
             AND date = CURDATE()
         )
 
-        --  8:00 PM - 11:59 PM (Sum of Today 8:00 PM - 11:59 PM)
         WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
         THEN (
             SELECT IFNULL(SUM(production), 0) FROM punching_machine 
