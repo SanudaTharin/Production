@@ -74,14 +74,14 @@ FROM (
         Shift_Production,
         entry_rate,
         CASE
-            WHEN entry_rate != 0 THEN (Shift_Production * 1.25) / (entry_rate * 60)
+            WHEN entry_rate != 0 THEN (Shift_Production * 1.25 * 100) / (entry_rate * 60)
             ELSE 0
         END AS Performance,
         CASE
             WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day'
             ELSE 'Night'
         END AS shift,
-        (entry_rate / (10.5 * 60)) AS Availability
+        (entry_rate * 100 / (10.5 * 60)) AS Availability
     FROM (
         SELECT
             CASE
