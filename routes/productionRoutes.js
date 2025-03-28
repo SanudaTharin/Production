@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { insertPunchingData, getPunchingData, getpunchingShift, punchpermonth} = require("../controllers/PunchingController");
-const { insertCnDData, getCnDData } = require("../controllers/CnDController");
+const { insertCnDData, getCnDData, getCnDShift, CnDpermonth } = require("../controllers/CnDController");
 const { insertCuttingData, getCuttingData } = require("../controllers/CuttingController");
 
 
@@ -14,6 +14,8 @@ router.get("/monthPunching",punchpermonth);
 // GET and POST for Cutting and Drilling Machine
 router.post("/postCnD", insertCnDData);
 router.get("/getCnD", getCnDData);
+router.get("/shiftCnD",getCnDShift);
+router.get("/monthCnD",CnDpermonth);
 
 router.post("/postCutting", insertCuttingData);
 router.get("/getCutting", getCuttingData);
