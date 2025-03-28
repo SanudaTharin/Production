@@ -83,14 +83,39 @@ FROM (
         END AS shift,
         (entry_rate / (10.5 * 60)) AS Availability
     FROM (
-        SELECT
-            CASE
-                WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
-                THEN (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo') AND date = CURDATE())
-                WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
-                THEN (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE time BETWEEN '20:00:00' AND '23:59:59' AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY))
-                ELSE (SELECT IFNULL(SUM(production), 0) FROM punching_machine WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
-            END AS Shift_Production,
+        SELECT 
+    CASE 
+        --  12:00 AM - 7:59 AM (Sum of Yesterday 8:00 PM - 11:59 PM + Today 12:00 AM - 7:59 AM)
+        WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+        THEN (
+            (SELECT IFNULL(SUM(production), 0) FROM punching_machine 
+             WHERE time BETWEEN '20:00:00' AND '23:59:59' 
+             AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
+            +
+            (SELECT IFNULL(SUM(production), 0) FROM punching_machine 
+             WHERE time BETWEEN '00:00:00' AND '07:59:59' 
+             AND date = CURDATE())
+        )
+        
+        --  8:00 AM - 7:59 PM (Sum of Today 8:00 AM - 7:59 PM)
+        WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+        THEN (
+            SELECT IFNULL(SUM(production), 0) FROM punching_machine 
+            WHERE time BETWEEN '08:00:00' AND '19:59:59' 
+            AND date = CURDATE()
+        )
+
+        --  8:00 PM - 11:59 PM (Sum of Today 8:00 PM - 11:59 PM)
+        WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+        THEN (
+            SELECT IFNULL(SUM(production), 0) FROM punching_machine 
+            WHERE time BETWEEN '20:00:00' AND '23:59:59' 
+            AND date = CURDATE()
+        )
+
+        ELSE 0
+    END AS Shift_Production;
+,
             (SELECT COUNT(*)
              FROM punching_machine
              WHERE production = 0
