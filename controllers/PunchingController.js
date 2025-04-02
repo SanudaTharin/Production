@@ -117,7 +117,7 @@ FROM (
 
             (SELECT COUNT(*)
              FROM punching_machine
-             WHERE production = 0
+             WHERE production != 0
              AND (
                  (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
                   AND TIME(time) BETWEEN '08:00:00'
