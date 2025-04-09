@@ -58,4 +58,135 @@ const getCuttingData = (req, res) => {
     });
 };
 
-module.exports = { insertCuttingData, getCuttingData };
+const getcuttingShift = (req, res) => {
+    // Query the database to get the production difference and shift data
+    db.query(`
+        SELECT
+    main_query.Shift_Production,
+    main_query.Performance,
+    main_query.shift,
+    main_query.Availability,
+    latest_entry.time AS Last_Entry_Time,
+    latest_entry.production AS Last_Production,
+    latest_entry.cumulative_production AS Last_Cumulative_Production
+FROM (
+    SELECT
+        Shift_Production,
+        entry_rate,
+        CASE
+            WHEN entry_rate != 0 THEN (Shift_Production * 1.25 * 100) / (entry_rate * 60)
+            ELSE 0
+        END AS Performance,
+        CASE
+            WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day'
+            ELSE 'Night'
+        END AS shift,
+        (entry_rate * 100 / (10.5 * 60)) AS Availability
+    FROM (
+        SELECT 
+    CASE 
+        
+        WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+        THEN (
+            (SELECT IFNULL(SUM(production), 0) FROM cutter_machine 
+             WHERE time BETWEEN '20:00:00' AND '23:59:59' 
+             AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
+            +
+            (SELECT IFNULL(SUM(production), 0) FROM cutter_machine 
+             WHERE time BETWEEN '00:00:00' AND '07:59:59' 
+             AND date = CURDATE())
+        )
+        
+        
+        WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+        THEN (
+            SELECT IFNULL(SUM(production), 0) FROM cutter_machine 
+            WHERE time BETWEEN '08:00:00' AND '19:59:59' 
+            AND date = CURDATE()
+        )
+
+        WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+        THEN (
+            SELECT IFNULL(SUM(production), 0) FROM cutter_machine 
+            WHERE time BETWEEN '20:00:00' AND '23:59:59' 
+            AND date = CURDATE()
+        )
+
+        ELSE 0
+    END AS Shift_Production,
+
+            (SELECT COUNT(*)
+             FROM cutter_machine
+             WHERE production != 0
+             AND (
+                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+                  AND TIME(time) BETWEEN '08:00:00'
+                  AND (SELECT MAX(time) FROM cutter_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
+                 OR
+                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+                  AND TIME(time) BETWEEN '20:00:00'
+                  AND (SELECT MAX(time) FROM cutter_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
+                 OR
+                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                  AND TIME(time) BETWEEN '20:00:00'
+                  AND (SELECT MAX(time) FROM cutter_machine WHERE date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY)))
+             )
+             AND (
+                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                 OR
+                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                 OR
+                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY))
+             )
+            ) AS entry_rate,
+            MAX(time) AS time
+        FROM cutter_machine
+        WHERE date = CURDATE()
+    ) AS subquery
+) AS main_query
+CROSS JOIN (
+    SELECT time, production, cumulative_production
+    FROM cutter_machine
+    ORDER BY id DESC
+    LIMIT 1
+) AS latest_entry;
+
+
+    `, (err, results) => {
+        if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ error: "Database query error" });
+        }
+
+        // Send back the results as a JSON response
+        res.status(200).json(results);
+    });
+};
+
+// API Route to Get Cumulative Production
+const cutpermonth = (req, res) => { 
+    const { year, month } = req.query;
+  
+    if (!year || !month) {
+        return res.status(400).json({ error: "Year and month are required" });
+    }
+  
+    const query = `
+        SELECT date, SUM(production) AS production
+        FROM cutter_machine
+        WHERE YEAR(date) = ? AND MONTH(date) = ?
+        GROUP BY date
+        ORDER BY date;
+    `;
+
+    db.query(query, [parseInt(year), parseInt(month)], (err, results) => {
+        if (err) {
+            console.error("Query error:", err);
+            return res.status(500).json({ error: "Internal Server Error" });
+        }
+        res.json(results);  
+    });
+};
+
+
+module.exports = { insertCuttingData, getCuttingData, getcuttingShift, cutpermonth };
