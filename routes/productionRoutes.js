@@ -4,7 +4,7 @@ const { insertPunchingData, getPunchingData, getpunchingShift, punchpermonth} = 
 const { insertCnDData, getCnDData, getCnDShift, CnDpermonth } = require("../controllers/CnDController");
 const { insertCuttingData, getCuttingData, getcuttingShift, cutpermonth } = require("../controllers/CuttingController");
 const { insertCuttingTwoData, getCuttingTwoData, getCuttingTwoShift, CuttingTwopermonth} = require("../controllers/Cuttingmachine2Controller");
-
+const { insertNutData, getNutData, getnutShift, nutpermonth} = require("../controllers/NutmacController");
 
 // GET and POST route to insert Punching data
 router.post("/data", insertPunchingData);
@@ -27,6 +27,11 @@ router.post("/postCuttingTwo", insertCuttingTwoData);
 router.get("/getCuttingTwo", getCuttingTwoData);
 router.get("/shiftCuttingTwo", getCuttingTwoShift);
 router.get("/monthCuttingTwo",CuttingTwopermonth);
+
+router.post("/postNut", insertNutData);
+router.get("/getCuttingTwo", getNutData);
+router.get("/shiftCuttingTwo", getnutShift);
+router.get("/monthCuttingTwo",nutpermonth);
 
 
 module.exports = router;
