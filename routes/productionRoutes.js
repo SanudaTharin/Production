@@ -29,9 +29,9 @@ router.get("/shiftCuttingTwo", getCuttingTwoShift);
 router.get("/monthCuttingTwo",CuttingTwopermonth);
 
 router.post("/postNut", insertNutData);
-router.get("/getCuttingTwo", getNutData);
-router.get("/shiftCuttingTwo", getnutShift);
-router.get("/monthCuttingTwo",nutpermonth);
+router.get("/getNut", getNutData);
+router.get("/shiftNut", getnutShift);
+router.get("/monthNut",nutpermonth);
 
 
 module.exports = router;
