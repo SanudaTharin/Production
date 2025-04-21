@@ -74,7 +74,7 @@ FROM (
         Shift_Production,
         entry_rate,
         CASE
-            WHEN entry_rate != 0 THEN (Shift_Production * 10 * 100) / (entry_rate * 60)
+            WHEN entry_rate != 0 THEN (Shift_Production * 7.5 * 100) / (entry_rate * 60)
             ELSE 0
         END AS Performance,
         CASE
