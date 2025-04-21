@@ -62,70 +62,119 @@ const getCnDShift = (req, res) => {
     // Query the database to get the production difference and shift data
     db.query(`
         SELECT
-    main_query.Shift_Production,
-    main_query.Performance,
-    main_query.shift,
-    main_query.Availability,
-    latest_entry.time AS Last_Entry_Time,
-    latest_entry.production AS Last_Production,
-    latest_entry.cumulative_production AS Last_Cumulative_Production
-FROM (
-    SELECT
-        Shift_Production,
-        entry_rate,
-        CASE
-            WHEN entry_rate != 0 THEN (Shift_Production * 8.57 * 100) / (entry_rate * 60)
-            ELSE 0
-        END AS Performance,
-        CASE
-            WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day'
-            ELSE 'Night'
-        END AS shift,
-        (entry_rate * 100 / (10.5 * 60)) AS Availability
-    FROM (
-        SELECT
-            CASE
-                WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
-                THEN (SELECT IFNULL(SUM(production), 0) FROM cut_drill_machine WHERE time BETWEEN '20:00:00' AND CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo') AND date = CURDATE())
-                WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
-                THEN (SELECT IFNULL(SUM(production), 0) FROM cut_drill_machine WHERE time BETWEEN '20:00:00' AND '23:59:59' AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY))
-                ELSE (SELECT IFNULL(SUM(production), 0) FROM cut_drill_machine WHERE TIME(time) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
-            END AS Shift_Production,
-            (SELECT COUNT(*)
-             FROM cut_drill_machine
-             WHERE production != 0
-             AND (
-                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
-                  AND TIME(time) BETWEEN '08:00:00'
-                  AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
-                 OR
-                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
-                  AND TIME(time) BETWEEN '20:00:00'
-                  AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
-                 OR
-                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
-                  AND TIME(time) BETWEEN '20:00:00'
-                  AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY)))
-             )
-             AND (
-                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
-                 OR
-                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
-                 OR
-                 (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY))
-             )
-            ) AS entry_rate,
-            MAX(time) AS time
-        FROM cut_drill_machine
-        WHERE date = CURDATE()
-    ) AS subquery
-) AS main_query
-CROSS JOIN (
-    SELECT time, production, cumulative_production
-    FROM cut_drill_machine
-    ORDER BY id DESC
-    LIMIT 1
-) AS latest_entry;
+            main_query.Shift_Production,
+            main_query.Performance,
+            main_query.shift,
+            main_query.Availability,
+            main_query.units_per_min,
+            latest_entry.time AS Last_Entry_Time,
+            latest_entry.production AS Last_Production,
+            latest_entry.cumulative_production AS Last_Cumulative_Production
+        FROM (
+            SELECT
+                Shift_Production,
+                CASE
+                    WHEN entry_rate != 0 THEN (Shift_Production * 1.25 * 100) / (entry_rate * 60)
+                    ELSE 0
+                END AS Performance,
+                CASE
+                    WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day'
+                    ELSE 'Night'
+                END AS shift,
+                (entry_rate * 100 / (10.5 * 60)) AS Availability,
+                CASE
+                    WHEN shift_time != 0 THEN FLOOR(Shift_Production / shift_time)
+                    ELSE 0
+                END AS units_per_min
+            FROM (
+                SELECT 
+                    CASE 
+                        WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                        THEN (
+                            (SELECT IFNULL(SUM(production), 0) FROM cut_drill_machine 
+                             WHERE time BETWEEN '20:00:00' AND '23:59:59' 
+                             AND date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)) 
+                            +
+                            (SELECT IFNULL(SUM(production), 0) FROM cut_drill_machine 
+                             WHERE time BETWEEN '00:00:00' AND '07:59:59' 
+                             AND date = CURDATE())
+                        )
+                        WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+                        THEN (
+                            SELECT IFNULL(SUM(production), 0) FROM cut_drill_machine 
+                            WHERE time BETWEEN '08:00:00' AND '19:59:59' 
+                            AND date = CURDATE()
+                        )
+                        WHEN TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+                        THEN (
+                            SELECT IFNULL(SUM(production), 0) FROM cut_drill_machine 
+                            WHERE time BETWEEN '20:00:00' AND '23:59:59' 
+                            AND date = CURDATE()
+                        )
+                        ELSE 0
+                    END AS Shift_Production,
+
+                    
+                    (SELECT COUNT(*)
+                     FROM cut_drill_machine
+                     WHERE production != 0
+                     AND (
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+                          AND TIME(time) BETWEEN '08:00:00'
+                          AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
+                         OR
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+                          AND TIME(time) BETWEEN '20:00:00'
+                          AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
+                         OR
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                          AND TIME(time) BETWEEN '20:00:00'
+                          AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY)))
+                     )
+                     AND (
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                         OR
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                         OR
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY))
+                     )
+                    ) AS entry_rate,
+
+                    (SELECT COUNT(*)
+                     FROM cut_drill_machine
+                     WHERE (
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+                          AND TIME(time) BETWEEN '08:00:00'
+                          AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
+                         OR
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+                          AND TIME(time) BETWEEN '20:00:00'
+                          AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
+                         OR
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                          AND TIME(time) BETWEEN '20:00:00'
+                          AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY)))
+                     )
+                     AND (
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                         OR
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                         OR
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY))
+                     )
+                    ) AS shift_time,
+
+                    MAX(time) AS time
+                FROM cut_drill_machine
+                WHERE date = CURDATE()
+            ) AS subquery
+        ) AS main_query
+        CROSS JOIN (
+            SELECT time, production, cumulative_production
+            FROM cut_drill_machine
+            ORDER BY id DESC
+            LIMIT 1
+        ) AS latest_entry;
 
 
     `, (err, results) => {
