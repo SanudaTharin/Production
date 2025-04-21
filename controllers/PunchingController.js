@@ -65,8 +65,6 @@ const getpunchingShift = (req, res) => {
             main_query.Performance,
             main_query.shift,
             main_query.Availability,
-            main_query.entry_rate,
-            main_query.shift_time,
             main_query.units_per_min,
             latest_entry.time AS Last_Entry_Time,
             latest_entry.production AS Last_Production,
@@ -74,8 +72,6 @@ const getpunchingShift = (req, res) => {
         FROM (
             SELECT
                 Shift_Production,
-                entry_rate,
-                shift_time,
                 CASE
                     WHEN entry_rate != 0 THEN (Shift_Production * 1.25 * 100) / (entry_rate * 60)
                     ELSE 0
@@ -86,7 +82,7 @@ const getpunchingShift = (req, res) => {
                 END AS shift,
                 (entry_rate * 100 / (10.5 * 60)) AS Availability,
                 CASE
-                    WHEN shift_time != 0 THEN Shift_Production / shift_time
+                    WHEN shift_time != 0 THEN FLOOR(Shift_Production / shift_time)
                     ELSE 0
                 END AS units_per_min
             FROM (
@@ -117,7 +113,7 @@ const getpunchingShift = (req, res) => {
                         ELSE 0
                     END AS Shift_Production,
 
-                    -- Existing: only entries with production != 0
+                    -- Internal use only
                     (SELECT COUNT(*)
                      FROM punching_machine
                      WHERE production != 0
@@ -143,7 +139,6 @@ const getpunchingShift = (req, res) => {
                      )
                     ) AS entry_rate,
 
-                    -- New: shift_time including all records regardless of production value
                     (SELECT COUNT(*)
                      FROM punching_machine
                      WHERE (
@@ -188,6 +183,7 @@ const getpunchingShift = (req, res) => {
         res.status(200).json(results);
     });
 };
+
 
 
 // API Route to Get Cumulative Production
