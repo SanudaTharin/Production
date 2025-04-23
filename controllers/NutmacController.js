@@ -81,7 +81,7 @@ const getnutShift = (req, res) => {
                     WHEN TIME(MAX(time)) BETWEEN '08:00:00' AND '19:59:59' THEN 'Day'
                     ELSE 'Night'
                 END AS shift,
-                (entry_rate * 100 / (10.5 * 60)) AS Availability,
+                (entry_rate * 100 / (shift_time)) AS Availability,
                 CASE
                     WHEN shift_time != 0 THEN FLOOR(Shift_Production / shift_time)
                     ELSE 0
