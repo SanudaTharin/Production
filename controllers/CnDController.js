@@ -115,59 +115,25 @@ const getCnDShift = (req, res) => {
                     END AS Shift_Production,
 
                     
-                    (SELECT COUNT(*)
-                     FROM cut_drill_machine
-                     WHERE production != 0
-                     AND (
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
-                          AND TIME(time) BETWEEN '08:00:00'
-                          AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
-                          AND TIME(time) BETWEEN '20:00:00'
-                          AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
-                                AND TIME(time) BETWEEN '00:00:00' AND (
-                                    SELECT ADDTIME(MAX(time), '04:00:00')
-                                    FROM cut_drill_machine
-                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
-                                    AND TIME(time) BETWEEN '00:00:00' AND '07:59:59')))
-                     )
-                     AND (
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
-                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
-                     )
-                    ) AS entry_rate,
-
-                    SELECT COUNT(*)
+                    SELECT
+                    (
+                        SELECT COUNT(*)
                         FROM cut_drill_machine
-                        WHERE (
-                            (
-                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
-                                AND TIME(time) BETWEEN '08:00:00' AND (
-                                    SELECT MAX(time)
+                        WHERE production != 0
+                        AND (
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+                                AND TIME(time) BETWEEN '08:00:00'
+                                AND (SELECT MAX(time)
                                     FROM cut_drill_machine
-                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
-                                )
-                                AND NOT (TIME(time) BETWEEN '12:30:00' AND '13:09:59')
-                            )
+                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
                             OR
-                            (
-                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
-                                AND TIME(time) BETWEEN '20:00:00' AND (
-                                    SELECT MAX(time)
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+                                AND TIME(time) BETWEEN '20:00:00'
+                                AND (SELECT MAX(time)
                                     FROM cut_drill_machine
-                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
-                                )
-                            )
+                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
                             OR
-                            (
-                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
                                 AND TIME(time) BETWEEN '00:00:00' AND (
                                     SELECT ADDTIME(MAX(time), '04:00:00')
                                     FROM cut_drill_machine
@@ -177,22 +143,58 @@ const getCnDShift = (req, res) => {
                             )
                         )
                         AND (
-                            (
-                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
-                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                            OR
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                            OR
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                        )
+                    ) AS entry_rate,
+
+                    (
+                        SELECT COUNT(*)
+                        FROM cut_drill_machine
+                        WHERE (
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+                                AND TIME(time) BETWEEN '08:00:00' AND (
+                                    SELECT MAX(time)
+                                    FROM cut_drill_machine
+                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                                )
+                                AND NOT (TIME(time) BETWEEN '12:30:00' AND '13:09:59')
                             )
                             OR
-                            (
-                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
-                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+                                AND TIME(time) BETWEEN '20:00:00' AND (
+                                    SELECT MAX(time)
+                                    FROM cut_drill_machine
+                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                                )
                             )
                             OR
-                            (
-                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
-                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                                AND TIME(time) BETWEEN '00:00:00' AND (
+                                    SELECT ADDTIME(MAX(time), '04:00:00')
+                                    FROM cut_drill_machine
+                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                                    AND TIME(time) BETWEEN '00:00:00' AND '07:59:59'
+                                )
                             )
-                        ) AS shift_time
-                        ,
+                        )
+                        AND (
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                            OR
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                            OR
+                            (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                        )
+                    ) AS shift_time,
 
                     MAX(time) AS time
                 FROM cut_drill_machine
