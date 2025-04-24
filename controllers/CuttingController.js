@@ -128,41 +128,72 @@ const getcuttingShift = (req, res) => {
                           AND (SELECT MAX(time) FROM cutter_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
                          OR
                          (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
-                          AND TIME(time) BETWEEN '20:00:00'
-                          AND (SELECT MAX(time) FROM cutter_machine WHERE date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY)))
+                                AND TIME(time) BETWEEN '00:00:00' AND (
+                                    SELECT ADDTIME(MAX(time), '04:00:00')
+                                    FROM cutter_machine
+                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                                    AND TIME(time) BETWEEN '00:00:00' AND '07:59:59')))
                      )
                      AND (
                          (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
                          OR
                          (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
                          OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY))
+                         ((
+                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                            )
                      )
                     ) AS entry_rate,
 
-                    (SELECT COUNT(*)
-                     FROM cutter_machine
-                     WHERE (
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
-                          AND TIME(time) BETWEEN '08:00:00'
-                          AND (SELECT MAX(time) FROM cutting_machine_2 WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
-                          AND TIME(time) BETWEEN '20:00:00'
-                          AND (SELECT MAX(time) FROM cutting_machine_2 WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
-                          AND TIME(time) BETWEEN '20:00:00'
-                          AND (SELECT MAX(time) FROM cutting_machine_2 WHERE date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY)))
-                     )
-                     AND (
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY))
-                     )
-                    ) AS shift_time,
+                    SELECT COUNT(*)
+                        FROM cutter_machine
+                        WHERE (
+                            (
+                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+                                AND TIME(time) BETWEEN '08:00:00' AND (
+                                    SELECT MAX(time)
+                                    FROM cutter_machine
+                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                                )
+                                AND NOT (TIME(time) BETWEEN '12:30:00' AND '13:09:59')
+                            )
+                            OR
+                            (
+                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+                                AND TIME(time) BETWEEN '20:00:00' AND (
+                                    SELECT MAX(time)
+                                    FROM cutter_machine
+                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                                )
+                            )
+                            OR
+                            (
+                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                                AND TIME(time) BETWEEN '00:00:00' AND (
+                                    SELECT ADDTIME(MAX(time), '04:00:00')
+                                    FROM cutter_machine
+                                    WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                                    AND TIME(time) BETWEEN '00:00:00' AND '07:59:59'
+                                )
+                            )
+                        )
+                        AND (
+                            (
+                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                            )
+                            OR
+                            (
+                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                            )
+                            OR
+                            (
+                                TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                                AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                            )
+                        ) AS shift_time;,
 
                     MAX(time) AS time
                 FROM cutter_machine
