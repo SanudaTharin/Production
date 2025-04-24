@@ -67,7 +67,6 @@ const getCnDShift = (req, res) => {
             main_query.shift,
             main_query.Availability,
             main_query.units_per_min,
-            main_query.entry_rate,
             latest_entry.time AS Last_Entry_Time,
             latest_entry.production AS Last_Production,
             latest_entry.cumulative_production AS Last_Cumulative_Production
