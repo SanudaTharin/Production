@@ -191,7 +191,7 @@ const getCnDShift = (req, res) => {
                                 TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
                                 AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
                             )
-                        ) AS shift_time;
+                        ) AS shift_time
                         ,
 
                     MAX(time) AS time
