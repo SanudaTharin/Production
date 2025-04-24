@@ -154,14 +154,17 @@ const getCnDShift = (req, res) => {
                          OR
                          (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
                           AND TIME(time) BETWEEN '20:00:00'
-                          AND (SELECT MAX(time) FROM cut_drill_machine WHERE date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY)))
+                          AND (SELECT ADDTIME(MAX(time), '04:00:00')
+                                FROM cut_drill_machine
+                                WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                                AND TIME(time) BETWEEN '00:00:00' AND '07:59:59')
                      )
                      AND (
                          (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
                          OR
                          (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
                          OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY))
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
                      )
                     ) AS shift_time,
 
