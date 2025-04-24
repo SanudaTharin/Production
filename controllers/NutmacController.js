@@ -115,7 +115,7 @@ const getnutShift = (req, res) => {
                     END AS Shift_Production,
 
                     
-                    SELECT COUNT(*)
+                    (SELECT COUNT(*)
                         FROM nut_machine 
                         WHERE production != 0
                         AND (
