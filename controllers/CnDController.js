@@ -164,7 +164,7 @@ const getCnDShift = (req, res) => {
                          OR
                          (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
                          OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY))
+                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
                      )
                     ) AS shift_time,
 
