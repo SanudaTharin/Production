@@ -117,7 +117,7 @@ const getCnDShift = (req, res) => {
                     END AS Shift_Production,
 
                     
-                    SELECT COUNT(*)
+                    (SELECT COUNT(*)
                         FROM cut_drill_machine 
                         WHERE production != 0
                         AND (
@@ -142,6 +142,7 @@ const getCnDShift = (req, res) => {
                             AND CONCAT(date, ' ', time) <= DATE_FORMAT(
                                 CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'), '%Y-%m-%d %H:%i:%s')
                             )
+                          )
                         ) AS entry_rate,
 
                     (SELECT COUNT(*)
