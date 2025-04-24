@@ -115,30 +115,33 @@ const getnutShift = (req, res) => {
                     END AS Shift_Production,
 
                     
-                    (SELECT COUNT(*)
-                     FROM nut_machine
-                     WHERE production != 0
-                     AND (
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
-                          AND TIME(time) BETWEEN '08:00:00'
-                          AND (SELECT MAX(time) FROM nut_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
-                          AND TIME(time) BETWEEN '20:00:00'
-                          AND (SELECT MAX(time) FROM nut_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
-                          AND TIME(time) BETWEEN '20:00:00'
-                          AND (SELECT MAX(time) FROM nut_machine WHERE date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY)))
-                     )
-                     AND (
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59' AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
-                         OR
-                         (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59' AND date = DATE_SUB(DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')), INTERVAL 1 DAY))
-                     )
-                    ) AS entry_rate,
+                    SELECT COUNT(*)
+                        FROM punching_machine 
+                        WHERE production != 0
+                        AND (
+                            (
+                            TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
+                            AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                            AND TIME(time) BETWEEN '08:00:00'
+                            AND (SELECT MAX(time) FROM punching_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))) 
+                            )
+                            OR
+                            (
+                            TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
+                            AND date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))
+                            AND TIME(time) BETWEEN '20:00:00'
+                            AND (SELECT MAX(time) FROM punching_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))) 
+                            )
+                            OR
+                            (
+                            TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '00:00:00' AND '07:59:59'
+                            AND CONCAT(date, ' ', time) >= DATE_FORMAT(
+                                DATE_SUB(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'), INTERVAL 1 DAY), '%Y-%m-%d 20:00:00')
+                            AND CONCAT(date, ' ', time) <= DATE_FORMAT(
+                                CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'), '%Y-%m-%d %H:%i:%s')
+                            )
+                          )
+                        ) AS entry_rate,
 
                     (SELECT COUNT(*)
                      FROM nut_machine
