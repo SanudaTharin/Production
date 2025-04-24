@@ -121,8 +121,7 @@ const getnutShift = (req, res) => {
                      AND (
                          (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
                           AND TIME(time) BETWEEN '08:00:00'
-                          AND (SELECT MAX(time) FROM nut_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
-                          AND NOT (TIME(time) BETWEEN '12:30:00' AND '12:59:59'))
+                          AND (SELECT MAX(time) FROM nut_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
                          OR
                          (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
                           AND TIME(time) BETWEEN '20:00:00'
@@ -146,7 +145,8 @@ const getnutShift = (req, res) => {
                      WHERE (
                          (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '08:00:00' AND '19:59:59'
                           AND TIME(time) BETWEEN '08:00:00'
-                          AND (SELECT MAX(time) FROM nut_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo'))))
+                          AND (SELECT MAX(time) FROM nut_machine WHERE date = DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')))
+                          AND NOT (TIME(time) BETWEEN '12:30:00' AND '12:59:59'))
                          OR
                          (TIME(CONVERT_TZ(NOW(), 'UTC', 'Asia/Colombo')) BETWEEN '20:00:00' AND '23:59:59'
                           AND TIME(time) BETWEEN '20:00:00'
