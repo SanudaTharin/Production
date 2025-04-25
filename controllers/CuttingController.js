@@ -15,7 +15,7 @@ const insertCuttingData = (req, res) => {
     }
 
     const shift = getShift();
-    const productionValue = Number(production); // Ensure it's a number
+    const productionValue = Math.ceil(Number(production) / 2); // Ensure it's a number
     const Date = moment().format("YYYY-MM-DD"); // Server's local Date
     const Time = moment().format("HH:mm:ss"); // Server's local Time
 
