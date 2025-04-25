@@ -74,7 +74,7 @@ const getnutShift = (req, res) => {
             SELECT
                 Shift_Production,
                 CASE
-                    WHEN entry_rate != 0 THEN (Shift_Production * 3.75 * 100) / (entry_rate * 60)
+                    WHEN entry_rate != 0 THEN (Shift_Production * 3.52 * 100) / (entry_rate * 60)
                     ELSE 0
                 END AS Performance,
                 CASE
